@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<title>EKUB & EKUK Kamonchilar</title>
+<style>
+body{margin:0;font-family:Arial;background:#cfe9ff;text-align:center;}
+#start,#restart{font-size:28px;padding:12px 35px;margin:10px;cursor:pointer;}
+#top{display:none;background:#ffffffee;padding:15px;}
+#q{font-size:34px;font-weight:bold;margin:10px;}
+#result{font-size:28px;font-weight:bold;margin:10px;height:36px;}
+canvas{display:block;margin:auto;background:linear-gradient(#87ceeb 65%,#4caf50 65%);}
+.life{width:220px;height:26px;border:3px solid #000;margin:6px auto;}
+.life div{height:100%;background:linear-gradient(90deg,#0f0,#6f6);}
+.pad{display:grid;grid-template-columns:repeat(3,70px);gap:6px;justify-content:center;margin-top:6px;}
+.pad button{font-size:26px;padding:12px;cursor:pointer;}
+input{font-size:26px;width:220px;text-align:center;}
+.player{font-size:22px;}
+</style>
+</head>
+<body>
+
+<button id="start">▶ O‘yinni boshlash</button>
+<button id="restart" style="display:none;">🔄 O‘yinni qayta boshlash</button>
+
+<div id="top">
+<h2 style="font-size:34px">🏹 EKUB & EKUK Kamonchilar Jangi</h2>
+<div id="q"></div>
+<div id="result"></div>
+
+<div style="display:flex;justify-content:space-around;">
+  <div class="player">
+    👤 1-o‘yinchi
+    <div class="life"><div id="l1"></div></div>
+    <input id="i1" disabled>
+    <div class="pad" id="p1"></div>
+  </div>
+  <div class="player">
+    👤 2-o‘yinchi
+    <div class="life"><div id="l2"></div></div>
+    <input id="i2" disabled>
+    <div class="pad" id="p2"></div>
+  </div>
+</div>
+</div>
+
+<canvas id="c" width="960" height="380"></canvas>
+
+<!-- OVOZ -->
+<audio id="shoot" src="https://actions.google.com/sounds/v1/weapons/arrow_shoot.ogg"></audio>
+<audio id="hit" src="https://actions.google.com/sounds/v1/impacts/wood_thud.ogg"></audio>
+<audio id="win" src="https://actions.google.com/sounds/v1/cartoon/cartoon_boing.ogg"></audio>
+
+<script>
+const c=document.getElementById('c');
+const ctx=c.getContext('2d');
+
+let hp1=100,hp2=100,ans,arrow=null,locked=false,started=false;
+
+const l1=document.getElementById('l1');
+const l2=document.getElementById('l2');
+const i1=document.getElementById('i1');
+const i2=document.getElementById('i2');
+const p1=document.getElementById('p1');
+const p2=document.getElementById('p2');
+const q=document.getElementById('q');
+const result=document.getElementById('result');
+const startBtn=document.getElementById('start');
+const restartBtn=document.getElementById('restart');
+l1.style.width=l2.style.width="100%";
+
+// EKUB va EKUK
+function ekub(a,b){while(b)[a,b]=[b,a%b];return a;}
+function ekuk(a,b){return a*b/ekub(a,b);}
+
+// Yangi savol — umumiy bo‘luvchilari 3 yoki undan ko‘p
+function newQ(){
+  let a,b,g;
+  do{
+    a = 10 + Math.floor(Math.random()*90);
+    b = 10 + Math.floor(Math.random()*90);
+    g = ekub(a,b);
+  } while(a===b || g<3);
+
+  if(Math.random()<0.5){ans=g; q.innerText=`EKUB (${a},${b}) = ?`}
+  else{ans=ekuk(a,b); q.innerText=`EKUK (${a},${b}) = ?`}
+
+  i1.value=i2.value="";
+  locked=false;
+  result.innerText="";
+}
+
+// Odam + kamon chizish
+function manWithBow(x,dir){
+  ctx.lineWidth=4;
+  ctx.strokeStyle="#000";
+  ctx.beginPath(); ctx.arc(x,200,18,0,Math.PI*2); ctx.stroke(); // head
+  ctx.beginPath(); ctx.moveTo(x,220); ctx.lineTo(x,270); ctx.stroke(); // body
+  ctx.beginPath(); ctx.moveTo(x,270); ctx.lineTo(x-18,320); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x,270); ctx.lineTo(x+18,320); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x,235); ctx.lineTo(x+dir*35,245); ctx.stroke(); // arm
+  ctx.strokeStyle="#8b4513";
+  ctx.beginPath();
+  if(dir>0){ ctx.arc(x+dir*45,245,30,-Math.PI/2.2,Math.PI/2.2);}
+  else{ ctx.arc(x+dir*45,245,30,Math.PI-Math.PI/2.2,Math.PI+Math.PI/2.2);}
+  ctx.stroke();
+}
+
+// Arrow animatsiyasi
+function draw(){
+  ctx.clearRect(0,0,960,380);
+  manWithBow(170,1);
+  manWithBow(790,-1);
+
+  if(arrow){
+    ctx.strokeStyle="#000";
+    ctx.lineWidth=3;
+    ctx.beginPath();
+    ctx.moveTo(arrow.x,245);
+    ctx.lineTo(arrow.x+18*arrow.d,245);
+    ctx.stroke();
+    arrow.x+=14*arrow.d;
+    if(arrow.x<200||arrow.x>750){arrow=null;document.getElementById('hit').play();}
+  }
+  if(started) requestAnimationFrame(draw);
+}
+
+// O'q uzish
+function shootP(p){
+  if(locked) return;
+  locked=true;
+  document.getElementById('shoot').play();
+  arrow={x:p==1?240:680,d:p==1?1:-1};
+
+  let inputVal = p==1 ? +i1.value : +i2.value;
+
+  if(inputVal===ans){ // To'g'ri javob
+    result.innerText="To‘g‘ri ✅";
+    if(p==1){hp2-=20; l2.style.width=hp2+"%";}
+    else{hp1-=20; l1.style.width=hp1+"%";}
+    if(hp1<=0 || hp2<=0){document.getElementById('win').play();}
+    setTimeout(newQ,900); // faqat to'g'ri javobdan keyin savol o'zgartiriladi
+  } else { // Noto'g'ri javob
+    result.innerText="Noto‘g‘ri ❌";
+    locked=false; // savol o'zgarmaydi, davom etadi
+  }
+}
+
+// Raqamlar bloki
+function makePad(pad,input,player){
+  pad.innerHTML="";
+  for(let n=1;n<=9;n++){let b=document.createElement("button"); b.innerText=n; b.onclick=()=>input.value+=n; pad.appendChild(b);}
+  let z=document.createElement("button"); z.innerText="0"; z.onclick=()=>input.value+="0";
+  let ok=document.createElement("button"); ok.innerText="OK"; ok.onclick=()=>shootP(player);
+  let c=document.createElement("button"); c.innerText="C"; c.onclick=()=>input.value="";
+  pad.append(z,ok,c);
+}
+
+// START tugmasi
+startBtn.addEventListener('click', ()=>{
+  started=true;
+  startBtn.style.display="none";
+  restartBtn.style.display="inline-block"; // faqat start bosilgandan keyin
+  document.getElementById('top').style.display="block";
+  newQ();
+  draw();
+  makePad(p1,i1,1);
+  makePad(p2,i2,2);
+});
+
+// RESTART tugmasi
+restartBtn.addEventListener('click', ()=>{
+  hp1=100; hp2=100;
+  l1.style.width=l2.style.width="100%";
+  newQ();
+  result.innerText="";
+});
+</script>
+
+</body>
+</html>
