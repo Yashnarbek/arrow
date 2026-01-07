@@ -6,16 +6,25 @@
 <style>
 body{margin:0;font-family:Arial;background:#cfe9ff;text-align:center;}
 #start,#restart{font-size:28px;padding:12px 35px;margin:10px;cursor:pointer;}
-#top{display:none;background:#ffffffee;padding:15px;}
+#top{position:relative;display:none;padding:15px;position:relative;}
 #q{font-size:34px;font-weight:bold;margin:10px;}
 #result{font-size:28px;font-weight:bold;margin:10px;height:36px;}
-canvas{display:block;margin:auto;background:linear-gradient(#87ceeb 65%,#4caf50 65%);}
+canvas{
+  position: relative;
+  top: -370px;
+  z-index:-2;
+  display:block;
+  margin:auto;
+  background:linear-gradient(#87ceeb 65%,#4caf50 65%);
+  width:890px;
+  height:380px;
+}
 .life{width:220px;height:26px;border:3px solid #000;margin:6px auto;}
 .life div{height:100%;background:linear-gradient(90deg,#0f0,#6f6);}
-.pad{display:grid;grid-template-columns:repeat(3,70px);gap:6px;justify-content:center;margin-top:6px;}
+.pad{display:grid;grid-template-columns:repeat(3,70px);gap:6px;justify-content:center;margin-top:6px;position:relative; z-index:2; background:rgba(255,255,255,0.8);}
 .pad button{font-size:26px;padding:12px;cursor:pointer;}
-input{font-size:26px;width:220px;text-align:center;}
-.player{font-size:22px;}
+input{font-size:26px;width:220px;text-align:center;position:relative; z-index:2;}
+.player{font-size:22px;position:relative; z-index:1;}
 </style>
 </head>
 <body>
@@ -28,7 +37,7 @@ input{font-size:26px;width:220px;text-align:center;}
 <div id="q"></div>
 <div id="result"></div>
 
-<div style="display:flex;justify-content:space-around;">
+<div style="display:flex;justify-content:space-around;position:relative; z-index:1;">
   <div class="player">
     👤 1-o‘yinchi
     <div class="life"><div id="l1"></div></div>
@@ -44,7 +53,7 @@ input{font-size:26px;width:220px;text-align:center;}
 </div>
 </div>
 
-<canvas id="c" width="960" height="380"></canvas>
+<canvas id="c" width="890" height="380"></canvas>
 
 <!-- OVOZ -->
 <audio id="shoot" src="https://actions.google.com/sounds/v1/weapons/arrow_shoot.ogg"></audio>
@@ -160,7 +169,7 @@ function makePad(pad,input,player){
 startBtn.addEventListener('click', ()=>{
   started=true;
   startBtn.style.display="none";
-  restartBtn.style.display="inline-block"; // faqat start bosilgandan keyin
+  restartBtn.style.display="inline-block"; 
   document.getElementById('top').style.display="block";
   newQ();
   draw();
