@@ -7,8 +7,8 @@
 body{
   margin:auto;
   width:1350px;
-  font-family:Arial;
-  background:#cfe9ff;
+  font-family:Arial, sans-serif;
+  background:#e0f7fa;
   text-align:center;
 }
 #start,#restart{
@@ -16,35 +16,88 @@ body{
   padding:12px 35px;
   margin:10px;
   cursor:pointer;
+  background:#4caf50;
+  color:white;
+  border:none;
+  border-radius:8px;
+  box-shadow:0 4px 6px rgba(0,0,0,0.2);
+}
+#start:hover,#restart:hover{
+  background:#388e3c;
 }
 #top{display:none;width:1350px;padding:15px;}
-#q{font-size:34px;font-weight:bold;margin:10px;}
-#result{font-size:28px;font-weight:bold;margin:10px;height:36px;}
-
+#q{font-size:34px;font-weight:bold;margin:10px;color:#1565c0;}
+#result{
+  font-size:28px;font-weight:bold;margin:10px;height:36px;
+  min-height:36px;
+  color:#d32f2f;
+}
 canvas{
   position:relative;
-  top:-370px;
-  z-index:-2;
+  top: -350px;
+  z-index: -1;
   display:block;
   margin:auto;
-  background:linear-gradient(#87ceeb 65%,#4caf50 65%);
+  background:linear-gradient(#87ceeb 65%, #4caf50 65%);
   width:850px;
   height:380px;
+  border-radius:8px;
+  box-shadow:0 6px 12px rgba(0,0,0,0.2);
 }
 
-.life{width:220px;height:26px;border:3px solid #000;margin:6px auto;}
-.life div{height:100%;background:linear-gradient(90deg,#0f0,#6f6);}
+.life{
+  width:220px;
+  height:26px;
+  border:3px solid #000;
+  margin:6px auto;
+  border-radius:4px;
+  overflow:hidden;
+}
+.life div{
+  height:100%;
+  background:linear-gradient(90deg, #4caf50, #8bc34a);
+  transition: width 0.5s ease;
+}
 .pad{
   display:grid;
   grid-template-columns:repeat(3,70px);
   gap:6px;
   justify-content:center;
   margin-top:6px;
-  background:rgba(255,255,255,0.8);
+  background:rgba(255,255,255,0.9);
+  padding:6px;
+  border-radius:6px;
 }
-.pad button{font-size:26px;padding:12px;cursor:pointer;}
-input{font-size:26px;width:220px;text-align:center;}
-.player{font-size:22px;}
+.pad button{
+  font-size:24px;
+  padding:10px 0;
+  cursor:pointer;
+  background:#e0e0e0;
+  border:1px solid #9e9e9e;
+  border-radius:6px;
+  transition:background 0.2s;
+}
+.pad button:hover{background:#bdbdbd;}
+input{
+  font-size:26px;
+  width:220px;
+  text-align:center;
+  padding:6px;
+  border:2px solid #757575;
+  border-radius:6px;
+}
+.player{
+  font-size:22px;
+  font-weight:bold;
+  margin:10px 0;
+}
+h2{
+  background:linear-gradient(to right, #1976d2, #004d40);
+  -webkit-background-clip:text;
+  color:transparent;
+  font-weight:bold;
+  text-shadow:1px 1px 2px rgba(0,0,0,0.1);
+}
 </style>
 </head>
 <body>
@@ -53,11 +106,11 @@ input{font-size:26px;width:220px;text-align:center;}
 <button id="restart" style="display:none;">🔄 Qayta boshlash</button>
 
 <div id="top">
-  <h2 style="font-size:34px">🏹 EKUB & EKUK Kamonchilar</h2>
+  <h2>🏹 EKUB & EKUK Kamonchilar</h2>
   <div id="q"></div>
   <div id="result"></div>
 
-  <div style="display:flex;justify-content:space-between;">
+  <div style="display:flex;justify-content:space-between;gap:40px;">
     <div class="player">
       👤 1-o‘yinchi
       <div class="life"><div id="l1"></div></div>
@@ -76,147 +129,337 @@ input{font-size:26px;width:220px;text-align:center;}
 
 <canvas id="c" width="890" height="380"></canvas>
 
-<audio id="shoot" src="https://actions.google.com/sounds/v1/weapons/arrow_shoot.ogg"></audio>
-<audio id="hit" src="https://actions.google.com/sounds/v1/impacts/wood_thud.ogg"></audio>
-<audio id="win" src="https://actions.google.com/sounds/v1/cartoon/cartoon_boing.ogg"></audio>
-
 <script>
-const c=document.getElementById('c');
-const ctx=c.getContext('2d');
+// 🔊 Base64 ovozlar
+const shootSoundBase64 = "UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFe25qZ2lrbHF2e4CHj5OWmZyhpKWmpaOhn5uYlZGPiomEgHx4dXNycXJzdHV3eX6ChYmNkJKVl5qcnJybmZeTj4uHhYB8eXRyb21ub3Fzdnl8goaLj5KUmZygo6WmqaqlpKGemZeTkIuHhH97eHV0c3V3e36BhIiMj5GWmJ2hoqSmp6WjoZ+bmZaSjYqHhIJ/fXp5e32AgoWJjI6RlJedoKKl";
+const hitSoundBase64 = "UklGRkIGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQIGAACBhYeJiYeFg4F/fXt5d3VzcXBvbWxramppaGdmZWRjYmFgX15dXFtaWVhXVlVUU1JRUE9OTUxLSklIR0ZFRENCQUA/Pj08Ozo5ODc2NTQzMjEwLy4tLCsqKSgnJiUkIyIhIB8eHRwbGhkYFxYVFBMSERAPDg0MCwoJCAcGBQQDAgEA";
+const winSoundBase64 = "UklGRiQGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQCBAJkAmQCZAJkAmQCZAJkAmQCZAJkAmQCZAJkAmQCZAJkAmQCZAJkAmQCZAJj//w==";
 
-let hp1=100,hp2=100,ans;
-let arrow=null,locked=false,started=false;
-
-const l1=document.getElementById('l1');
-const l2=document.getElementById('l2');
-const i1=document.getElementById('i1');
-const i2=document.getElementById('i2');
-const p1=document.getElementById('p1');
-const p2=document.getElementById('p2');
-const q=document.getElementById('q');
-const result=document.getElementById('result');
-
-l1.style.width=l2.style.width="100%";
-
-function ekub(a,b){while(b)[a,b]=[b,a%b];return a;}
-function ekuk(a,b){return a*b/ekub(a,b);}
-
-function newQ(){
-  let a,b,g;
-  do{
-    a=10+Math.floor(Math.random()*90);
-    b=10+Math.floor(Math.random()*90);
-    g=ekub(a,b);
-  }while(a===b||g<3);
-
-  if(Math.random()<0.5){
-    ans=g;
-    q.innerText=`EKUB (${a},${b}) = ?`;
-  }else{
-    ans=ekuk(a,b);
-    q.innerText=`EKUK (${a},${b}) = ?`;
+function playSound(base64) {
+  try {
+    const audio = new Audio("data:audio/wav;base64," + base64);
+    audio.volume = 0.6;
+    audio.play().catch(e => console.log("Audio play failed:", e));
+  } catch (e) {
+    console.warn("Ovoz qo'llab-quvvatlanmaydi:", e);
   }
-  i1.value=i2.value="";
-  locked=false;
-  result.innerText="";
 }
 
-function man(x,d){
-  ctx.lineWidth=4;
-  ctx.strokeStyle="#000";
-  ctx.beginPath();ctx.arc(x,200,18,0,Math.PI*2);ctx.stroke();
-  ctx.beginPath();ctx.moveTo(x,220);ctx.lineTo(x,270);ctx.stroke();
-  ctx.beginPath();ctx.moveTo(x,270);ctx.lineTo(x-18,320);ctx.stroke();
-  ctx.beginPath();ctx.moveTo(x,270);ctx.lineTo(x+18,320);ctx.stroke();
-  ctx.beginPath();ctx.moveTo(x,235);ctx.lineTo(x+d*35,245);ctx.stroke();
+let hp1 = 100, hp2 = 100, ans;
+let arrow = null, locked = false, started = false;
+let pull = 0;
+
+const l1 = document.getElementById('l1');
+const l2 = document.getElementById('l2');
+const i1 = document.getElementById('i1');
+const i2 = document.getElementById('i2');
+const p1 = document.getElementById('p1');
+const p2 = document.getElementById('p2');
+const q = document.getElementById('q');
+const result = document.getElementById('result');
+
+l1.style.width = l2.style.width = "100%";
+
+function ekub(a, b) {
+  while (b) [a, b] = [b, a % b];
+  return a;
+}
+function ekuk(a, b) {
+  return (a * b) / ekub(a, b);
 }
 
-function draw(){
-  ctx.clearRect(0,0,960,380);
-  man(170,1); man(790,-1);
+function newQ() {
+  let a, b, g;
+  do {
+    a = 10 + Math.floor(Math.random() * 90);
+    b = 10 + Math.floor(Math.random() * 90);
+    g = ekub(a, b);
+  } while (a === b || g < 3);
 
-  if(arrow){
+  if (Math.random() < 0.5) {
+    ans = g;
+    q.innerText = `EKUB (${a},${b}) = ?`;
+  } else {
+    ans = ekuk(a, b);
+    q.innerText = `EKUK (${a},${b}) = ?`;
+  }
+  i1.value = i2.value = "";
+  locked = false;
+  result.innerText = "";
+  pull = 0;
+}
+
+// 🏹 TO'G'RI YOYSIMON KAMON (real kamon kabi)
+function drawBow(x, y, dir, pulling = 0) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(dir, 1);
+
+  // Kamon tanasi — yopiq yoysimon shakl
+  ctx.strokeStyle = "#5d4037";
+  ctx.lineWidth = 6;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  // Yuqori uch
+  ctx.moveTo(-20, -30);
+  // Pastki uch
+  ctx.lineTo(20, 30);
+  // Markaz orqali egilish (tashqariga)
+  const bendX = pulling ? -14 : -8;
+  ctx.quadraticCurveTo(bendX, 0, -20, -30);
+  ctx.stroke();
+
+  // Kamon ipi
+  ctx.strokeStyle = "#f0f0f0";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(-20, -30);
+  ctx.lineTo(20, 30);
+  ctx.stroke();
+
+  // O'q (faqat cho'zilganda)
+  if (pulling) {
+    ctx.strokeStyle = "#8B4513";
+    ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.moveTo(arrow.x,245);
-    ctx.lineTo(arrow.x+18*arrow.d,245);
+    ctx.moveTo(20, 30);
+    ctx.lineTo(60, 30);
     ctx.stroke();
-    arrow.x+=14*arrow.d;
-    if(arrow.x<200||arrow.x>750){
-      arrow=null;
-      document.getElementById('hit').play();
-    }
+
+    // Uchi
+    ctx.fillStyle = "#FFA000";
+    ctx.beginPath();
+    ctx.moveTo(60, 30);
+    ctx.lineTo(70, 27);
+    ctx.lineTo(70, 33);
+    ctx.closePath();
+    ctx.fill();
+
+    // Qanotlar
+    ctx.fillStyle = "#424242";
+    ctx.beginPath();
+    ctx.moveTo(20, 30);
+    ctx.lineTo(14, 27);
+    ctx.lineTo(14, 33);
+    ctx.closePath();
+    ctx.fill();
   }
-  if(started) requestAnimationFrame(draw);
+
+  ctx.restore();
 }
 
-function endGame(winner){
-  started=false;
-  locked=true;
-  arrow=null;
-  setTimeout(()=>{
-    alert("🏆 G‘olib: "+winner);
+function drawArcher(x, dir) {
+  // Tanasi
+  ctx.fillStyle = dir === 1 ? "#2196f3" : "#f44336";
+  ctx.fillRect(x - 10, 240, 20, 60);
+
+  // Bosh
+  ctx.fillStyle = "#ffccbc";
+  ctx.beginPath();
+  ctx.arc(x, 225, 12, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "#000";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Soch
+  ctx.fillStyle = dir === 1 ? "#1565c0" : "#c62828";
+  ctx.beginPath();
+  ctx.arc(x, 225, 10, Math.PI, 0, false);
+  ctx.fill();
+
+  // Qo'l
+  ctx.strokeStyle = "#000";
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(x, 260);
+  const pullOffset = (pull === (dir === 1 ? 1 : 2)) ? -25 : 0;
+  ctx.lineTo(x + 30 * dir, 260 + pullOffset);
+  ctx.stroke();
+
+  // Kamon
+  drawBow(x + 30 * dir, 260 + pullOffset, dir, pull === (dir === 1 ? 1 : 2));
+}
+
+function drawArrow(x, y, dir) {
+  ctx.strokeStyle = "#8B4513";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(x + 35 * dir, y);
+  ctx.stroke();
+
+  ctx.fillStyle = "#FFA000";
+  ctx.beginPath();
+  ctx.moveTo(x + 35 * dir, y);
+  ctx.lineTo(x + 35 * dir + 8 * dir, y - 4);
+  ctx.lineTo(x + 35 * dir + 8 * dir, y + 4);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = "#424242";
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(x - 6, y - 3);
+  ctx.lineTo(x - 6, y + 3);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawScene() {
+  // Osmon
+  const grad = ctx.createLinearGradient(0, 0, 0, 250);
+  grad.addColorStop(0, "#87CEFA");
+  grad.addColorStop(1, "#E0F7FA");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 890, 250);
+
+  // Yer
+  ctx.fillStyle = "#4caf50";
+  ctx.fillRect(0, 250, 890, 130);
+
+  // Daraxt
+  ctx.fillStyle = "#5d4037";
+  ctx.fillRect(50, 180, 20, 200);
+  ctx.fillStyle = "#388e3c";
+  ctx.beginPath();
+  ctx.arc(60, 150, 50, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillRect(820, 180, 20, 200);
+  ctx.beginPath();
+  ctx.arc(830, 150, 50, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#424242";
+  ctx.fillRect(0, 375, 890, 5);
+}
+
+const c = document.getElementById('c');
+const ctx = c.getContext('2d');
+
+function draw() {
+  drawScene();
+  drawArcher(170, 1);
+  drawArcher(720, -1);
+
+  if (arrow) {
+    drawArrow(arrow.x, arrow.y, arrow.d);
+    arrow.x += 20 * arrow.d;
+    if (arrow.x < 0 || arrow.x > 890) {
+      playSound(hitSoundBase64);
+      arrow = null;
+    }
+  }
+
+  if (started) requestAnimationFrame(draw);
+}
+
+function endGame(winner) {
+  started = false;
+  locked = true;
+  arrow = null;
+  setTimeout(() => {
+    playSound(winSoundBase64);
+    alert("🏆 G‘olib: " + winner);
     restartGame();
-  },300);
+  }, 600);
 }
 
-function shoot(p){
-  if(locked) return;
-  locked=true;
-  document.getElementById('shoot').play();
-  arrow={x:p==1?240:680,d:p==1?1:-1};
+function shoot(p) {
+  if (locked) return;
+  playSound(shootSoundBase64);
+  locked = true;
+  pull = 0;
 
-  let val=p==1?+i1.value:+i2.value;
+  const x = p === 1 ? 200 : 690;
+  const y = 260;
+  const dir = p === 1 ? 1 : -1;
+  arrow = { x: x, y: y, d: dir, owner: p };
 
-  if(val===ans){
-    result.innerText="To‘g‘ri ✅";
-    if(p==1){
-      hp2-=20; l2.style.width=Math.max(hp2,0)+"%";
-      if(hp2<=0){document.getElementById('win').play();endGame("1-o‘yinchi");return;}
-    }else{
-      hp1-=20; l1.style.width=Math.max(hp1,0)+"%";
-      if(hp1<=0){document.getElementById('win').play();endGame("2-o‘yinchi");return;}
+  let val = p === 1 ? +i1.value : +i2.value;
+
+  if (val === ans) {
+    result.innerText = "✅ To‘g‘ri!";
+    result.style.color = "#388e3c";
+    if (p === 1) {
+      hp2 -= 20;
+      l2.style.width = Math.max(hp2, 0) + "%";
+      if (hp2 <= 0) {
+        endGame("1-o‘yinchi");
+        return;
+      }
+    } else {
+      hp1 -= 20;
+      l1.style.width = Math.max(hp1, 0) + "%";
+      if (hp1 <= 0) {
+        endGame("2-o‘yinchi");
+        return;
+      }
     }
-    setTimeout(newQ,900);
-  }else{
-    result.innerText="Noto‘g‘ri ❌";
-    locked=false;
+    setTimeout(newQ, 1200);
+  } else {
+    result.innerText = "❌ Noto‘g‘ri!";
+    result.style.color = "#d32f2f";
+    setTimeout(() => {
+      result.innerText = "";
+      locked = false;
+    }, 1000);
   }
 }
 
-function pad(pad,input,p){
-  pad.innerHTML="";
-  for(let n=1;n<=9;n++){
-    let b=document.createElement("button");
-    b.innerText=n;
-    b.onclick=()=>input.value+=n;
-    pad.appendChild(b);
+function pad(padEl, input, p) {
+  padEl.innerHTML = "";
+  for (let n = 1; n <= 9; n++) {
+    let b = document.createElement("button");
+    b.innerText = n;
+    b.onclick = () => {
+      if (!locked) input.value += n;
+      pull = p;
+    };
+    padEl.appendChild(b);
   }
-  let z=document.createElement("button");z.innerText="0";z.onclick=()=>input.value+="0";
-  let ok=document.createElement("button");ok.innerText="OK";ok.onclick=()=>shoot(p);
-  let c=document.createElement("button");c.innerText="C";c.onclick=()=>input.value="";
-  pad.append(z,ok,c);
+  let z = document.createElement("button"); z.innerText = "0";
+  z.onclick = () => { if (!locked) { input.value += "0"; pull = p; } };
+  let ok = document.createElement("button"); ok.innerText = "OK";
+  ok.style.background = "#4caf50"; ok.style.color = "white";
+  ok.onclick = () => shoot(p);
+  let c = document.createElement("button"); c.innerText = "C";
+  c.style.background = "#f44336"; c.style.color = "white";
+  c.onclick = () => { if (!locked) input.value = ""; };
+
+  padEl.append(z, ok, c);
 }
 
-function restartGame(){
-  hp1=hp2=100;
-  l1.style.width=l2.style.width="100%";
-  locked=false;
-  started=true;
+function restartGame() {
+  hp1 = hp2 = 100;
+  l1.style.width = l2.style.width = "100%";
+  locked = false;
+  started = true;
   newQ();
+  arrow = null;
   draw();
 }
 
-document.getElementById('start').onclick=()=>{
-  started=true;
-  document.getElementById('start').style.display="none";
-  document.getElementById('restart').style.display="inline-block";
-  document.getElementById('top').style.display="block";
-  pad(p1,i1,1);
-  pad(p2,i2,2);
+document.getElementById('start').onclick = () => {
+  started = true;
+  document.getElementById('start').style.display = "none";
+  document.getElementById('restart').style.display = "inline-block";
+  document.getElementById('top').style.display = "block";
+  pad(p1, i1, 1);
+  pad(p2, i2, 2);
   restartGame();
 };
 
-document.getElementById('restart').onclick=restartGame;
+document.getElementById('restart').onclick = restartGame;
+
+document.addEventListener('keydown', (e) => {
+  if (!started || locked) return;
+  if (e.key === 'Enter') {
+    if (i1 === document.activeElement) shoot(1);
+    else if (i2 === document.activeElement) shoot(2);
+  }
+});
 </script>
 
 </body>
