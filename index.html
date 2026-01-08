@@ -2,14 +2,24 @@
 <html lang="uz">
 <head>
 <meta charset="UTF-8">
+<!-- 💡 Zoomni to'xtatish uchun viewport -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0">
 <title>EKUB & EKUK Kamonchilar</title>
 <style>
+/* 💡 Double-tap zoomni to'xtatish */
+html, body {
+  touch-action: manipulation;
+  overscroll-behavior: contain;
+}
+
 body{
   margin:auto;
   width:1350px;
   font-family:Arial, sans-serif;
   background:#e0f7fa;
   text-align:center;
+  /* So that body doesn't scroll on touch */
+  overflow: hidden;
 }
 #start,#restart{
   font-size:28px;
@@ -76,6 +86,8 @@ canvas{
   border:1px solid #9e9e9e;
   border-radius:6px;
   transition:background 0.2s;
+  /* Prevent button double-tap zoom */
+  touch-action: manipulation;
 }
 .pad button:hover{background:#bdbdbd;}
 input{
@@ -97,6 +109,13 @@ h2{
   color:transparent;
   font-weight:bold;
   text-shadow:1px 1px 2px rgba(0,0,0,0.1);
+}
+
+/* Prevent any accidental scrolling or zooming */
+* {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  user-select: none;
 }
 </style>
 </head>
@@ -130,7 +149,7 @@ h2{
 <canvas id="c" width="890" height="380"></canvas>
 
 <script>
-// 🔊 Base64 ovozlar
+// 🔊 Base64 ovozlar (xavfsiz, offline ishlaydi)
 const shootSoundBase64 = "UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFe25qZ2lrbHF2e4CHj5OWmZyhpKWmpaOhn5uYlZGPiomEgHx4dXNycXJzdHV3eX6ChYmNkJKVl5qcnJybmZeTj4uHhYB8eXRyb21ub3Fzdnl8goaLj5KUmZygo6WmqaqlpKGemZeTkIuHhH97eHV0c3V3e36BhIiMj5GWmJ2hoqSmp6WjoZ+bmZaSjYqHhIJ/fXp5e32AgoWJjI6RlJedoKKl";
 const hitSoundBase64 = "UklGRkIGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQIGAACBhYeJiYeFg4F/fXt5d3VzcXBvbWxramppaGdmZWRjYmFgX15dXFtaWVhXVlVUU1JRUE9OTUxLSklIR0ZFRENCQUA/Pj08Ozo5ODc2NTQzMjEwLy4tLCsqKSgnJiUkIyIhIB8eHRwbGhkYFxYVFBMSERAPDg0MCwoJCAcGBQQDAgEA";
 const winSoundBase64 = "UklGRiQGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQCBAJkAmQCZAJkAmQCZAJkAmQCZAJkAmQCZAJkAmQCZAJkAmQCZAJkAmQCZAJj//w==";
@@ -189,27 +208,22 @@ function newQ() {
   pull = 0;
 }
 
-// 🏹 TO'G'RI YOYSIMON KAMON (real kamon kabi)
+// 🏹 TO'G'RI YOYSIMON KAMON
 function drawBow(x, y, dir, pulling = 0) {
   ctx.save();
   ctx.translate(x, y);
   ctx.scale(dir, 1);
 
-  // Kamon tanasi — yopiq yoysimon shakl
   ctx.strokeStyle = "#5d4037";
   ctx.lineWidth = 6;
   ctx.lineCap = "round";
   ctx.beginPath();
-  // Yuqori uch
   ctx.moveTo(-20, -30);
-  // Pastki uch
   ctx.lineTo(20, 30);
-  // Markaz orqali egilish (tashqariga)
   const bendX = pulling ? -14 : -8;
   ctx.quadraticCurveTo(bendX, 0, -20, -30);
   ctx.stroke();
 
-  // Kamon ipi
   ctx.strokeStyle = "#f0f0f0";
   ctx.lineWidth = 2;
   ctx.beginPath();
@@ -217,7 +231,6 @@ function drawBow(x, y, dir, pulling = 0) {
   ctx.lineTo(20, 30);
   ctx.stroke();
 
-  // O'q (faqat cho'zilganda)
   if (pulling) {
     ctx.strokeStyle = "#8B4513";
     ctx.lineWidth = 3;
@@ -226,7 +239,6 @@ function drawBow(x, y, dir, pulling = 0) {
     ctx.lineTo(60, 30);
     ctx.stroke();
 
-    // Uchi
     ctx.fillStyle = "#FFA000";
     ctx.beginPath();
     ctx.moveTo(60, 30);
@@ -235,7 +247,6 @@ function drawBow(x, y, dir, pulling = 0) {
     ctx.closePath();
     ctx.fill();
 
-    // Qanotlar
     ctx.fillStyle = "#424242";
     ctx.beginPath();
     ctx.moveTo(20, 30);
@@ -249,11 +260,9 @@ function drawBow(x, y, dir, pulling = 0) {
 }
 
 function drawArcher(x, dir) {
-  // Tanasi
   ctx.fillStyle = dir === 1 ? "#2196f3" : "#f44336";
   ctx.fillRect(x - 10, 240, 20, 60);
 
-  // Bosh
   ctx.fillStyle = "#ffccbc";
   ctx.beginPath();
   ctx.arc(x, 225, 12, 0, Math.PI * 2);
@@ -262,13 +271,11 @@ function drawArcher(x, dir) {
   ctx.lineWidth = 1;
   ctx.stroke();
 
-  // Soch
   ctx.fillStyle = dir === 1 ? "#1565c0" : "#c62828";
   ctx.beginPath();
   ctx.arc(x, 225, 10, Math.PI, 0, false);
   ctx.fill();
 
-  // Qo'l
   ctx.strokeStyle = "#000";
   ctx.lineWidth = 4;
   ctx.beginPath();
@@ -277,7 +284,6 @@ function drawArcher(x, dir) {
   ctx.lineTo(x + 30 * dir, 260 + pullOffset);
   ctx.stroke();
 
-  // Kamon
   drawBow(x + 30 * dir, 260 + pullOffset, dir, pull === (dir === 1 ? 1 : 2));
 }
 
@@ -307,18 +313,15 @@ function drawArrow(x, y, dir) {
 }
 
 function drawScene() {
-  // Osmon
   const grad = ctx.createLinearGradient(0, 0, 0, 250);
   grad.addColorStop(0, "#87CEFA");
   grad.addColorStop(1, "#E0F7FA");
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, 890, 250);
 
-  // Yer
   ctx.fillStyle = "#4caf50";
   ctx.fillRect(0, 250, 890, 130);
 
-  // Daraxt
   ctx.fillStyle = "#5d4037";
   ctx.fillRect(50, 180, 20, 200);
   ctx.fillStyle = "#388e3c";
@@ -417,16 +420,20 @@ function pad(padEl, input, p) {
       if (!locked) input.value += n;
       pull = p;
     };
+    b.style.touchAction = "manipulation";
     padEl.appendChild(b);
   }
   let z = document.createElement("button"); z.innerText = "0";
   z.onclick = () => { if (!locked) { input.value += "0"; pull = p; } };
+  z.style.touchAction = "manipulation";
   let ok = document.createElement("button"); ok.innerText = "OK";
   ok.style.background = "#4caf50"; ok.style.color = "white";
   ok.onclick = () => shoot(p);
+  ok.style.touchAction = "manipulation";
   let c = document.createElement("button"); c.innerText = "C";
   c.style.background = "#f44336"; c.style.color = "white";
   c.onclick = () => { if (!locked) input.value = ""; };
+  c.style.touchAction = "manipulation";
 
   padEl.append(z, ok, c);
 }
